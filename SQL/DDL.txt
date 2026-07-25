@@ -1,0 +1,252 @@
+CREATE SCHEMA JUDICIARY 
+SET SEARCH_PATH TO JUDICIARY 
+ 
+CREATE TABLE "CASE" ( 
+    case_no VARCHAR(15) NOT NULL, 
+    "type" VARCHAR(10), 
+    "Category" VARCHAR(20), 
+    "Jurisdiction_Type" VARCHAR(15), 
+    "Name" VARCHAR(50), 
+    "Description" TEXT, 
+    curr_status VARCHAR(10), -- NOT a foreign key (intentional) 
+    CONSTRAINT pk_case PRIMARY KEY (case_no) 
+); 
+ 
+CREATE TABLE LAWYER ( 
+    "BAR_Registration_No" VARCHAR(20)  NOT NULL, 
+    "Qualification"       VARCHAR(100), 
+    "Specialization"      VARCHAR(100), 
+    "Phone_No"            VARCHAR(15), 
+    "Email"               VARCHAR(50), 
+    "Office_Address"      TEXT, 
+    "Experience"          TEXT, 
+    "Status"              VARCHAR(20), 
+    CONSTRAINT pk_lawyer PRIMARY KEY ("BAR_Registration_No") 
+); 
+ 
+CREATE TABLE JUDGE ( 
+    "ID"            INT         NOT NULL, 
+    "Name"          VARCHAR(66), 
+    "Gender"        VARCHAR(15), 
+    "DOB"           DATE, 
+    "Email"         VARCHAR(50), 
+    "Status"        VARCHAR(10), 
+    "Phone_No"      VARCHAR(13), 
+    "Address"       TEXT, 
+    "Position"      VARCHAR(10), 
+    "Qualification" VARCHAR(15), 
+    "Experience"    VARCHAR(10), 
+    CONSTRAINT pk_judge PRIMARY KEY ("ID") 
+); 
+ 
+CREATE TABLE COURT ( 
+    "ID"       INT         NOT NULL, 
+    "Location" TEXT, 
+    "Level"    VARCHAR(10), 
+    "Pin_Code" INT, 
+    "Email"    VARCHAR(50), 
+    "Phone_No" VARCHAR(13), 
+    CONSTRAINT pk_court PRIMARY KEY ("ID") 
+); 
+ 
+CREATE TABLE LITIGANTS ( 
+    "ID"      VARCHAR(20) NOT NULL, 
+    "Name"    VARCHAR(50), 
+ 
+    "Type"    VARCHAR(20), 
+    "Address" TEXT, 
+    "Phone"   VARCHAR(15), 
+    "Email"   VARCHAR(50), 
+    "Gender"  VARCHAR(10), 
+    CONSTRAINT pk_litigants PRIMARY KEY ("ID") 
+); 
+ 
+CREATE TABLE PANEL ( 
+    "ID"          INT         NOT NULL, 
+    "type"        VARCHAR(20), 
+    form_date     DATE, 
+    dissolve_date DATE, 
+    CONSTRAINT pk_panel PRIMARY KEY ("ID") 
+); 
+ 
+CREATE TABLE FILING_DETAILS ( 
+    "ID"                VARCHAR(15) NOT NULL, 
+    "Date"              DATE, 
+    "Registration_date" DATE, 
+    "filing_mode"       VARCHAR(50), 
+    case_no             VARCHAR(15), 
+    CONSTRAINT pk_filing_details PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_filing_case FOREIGN KEY (case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE SET NULL 
+); 
+ 
+CREATE TABLE CASE_STATUS ( 
+    "ID"           VARCHAR(15) NOT NULL, 
+    status         VARCHAR(5), 
+    curr_stage     VARCHAR(10), 
+    is_dormant     BOOLEAN, 
+    dormant_reason TEXT, 
+    case_no        VARCHAR(15), 
+    CONSTRAINT pk_case_status PRIMARY KEY ("ID") 
+); 
+ 
+CREATE TABLE JUDGEMENT ( 
+    "ID"                       VARCHAR(25) NOT NULL, 
+    "Decision_date"            DATE, 
+    verdict                    TEXT, 
+    compensations              TEXT, 
+    sentence_length_punishment TEXT, 
+    remark                     TEXT, 
+    case_no                    VARCHAR(15), 
+    CONSTRAINT pk_judgement PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_judgement_case FOREIGN KEY (case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE SET NULL 
+); 
+ 
+CREATE TABLE EVIDENCE ( 
+    "ID"              INT         NOT NULL, 
+    "Type"            VARCHAR(20), 
+    "Description"     TEXT, 
+    "Submission_date" DATE, 
+    "Verified_Status" BOOLEAN,    -- mapped from BINARY 
+    case_no           VARCHAR(15), 
+    CONSTRAINT pk_evidence PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_evidence_case FOREIGN KEY (case_no) 
+ 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE SET NULL 
+); 
+ 
+CREATE TABLE WARRANT ( 
+    "ID"         VARCHAR(15) NOT NULL, 
+    "Type"       VARCHAR(10), 
+    "Issue_Date" TIMESTAMP,       -- mapped from DATETIME 
+    "Exp_date"   TIMESTAMP, 
+    "Status"     VARCHAR(10), 
+    case_no      VARCHAR(15), 
+    CONSTRAINT pk_warrant PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_warrant_case FOREIGN KEY (case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE SET NULL 
+); 
+ 
+CREATE TABLE DOCUMENT_REPO ( 
+    "ID"                  VARCHAR(20) NOT NULL, 
+    "Name"                VARCHAR(50), 
+    "Type"                VARCHAR(20), 
+    "Link"                TEXT, 
+    "BAR_Registration_No" VARCHAR(20), 
+    CONSTRAINT pk_document_repo PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_docrepo_lawyer FOREIGN KEY ("BAR_Registration_No") 
+        REFERENCES LAWYER ("BAR_Registration_No") 
+        ON UPDATE CASCADE ON DELETE SET NULL 
+); 
+ 
+CREATE TABLE HEARING ( 
+    "Hearing_No" INT         NOT NULL, 
+    case_no      VARCHAR(15) NOT NULL, 
+    "Type"       VARCHAR(10), 
+    "Status"     VARCHAR(10), 
+    CONSTRAINT pk_hearing PRIMARY KEY ("Hearing_No", case_no), 
+    CONSTRAINT fk_hearing_case FOREIGN KEY (case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE CASCADE 
+); 
+ 
+CREATE TABLE HEARING_TRANSCRIPT ( 
+    "ID"         INT         NOT NULL, 
+    "Text"       TEXT, 
+    recorded_by  INT, 
+    "Time_stamp" TIME, 
+    "Hearing_no" INT         NOT NULL, 
+    case_no      VARCHAR(15) NOT NULL, 
+    CONSTRAINT pk_hearing_transcript PRIMARY KEY ("ID"), 
+    CONSTRAINT fk_ht_hearing FOREIGN KEY ("Hearing_no", case_no) 
+        REFERENCES HEARING ("Hearing_No", case_no) 
+        ON UPDATE CASCADE ON DELETE CASCADE 
+); 
+ -- HANDLED_BY : LAWYER (N) — CASE (N) 
+CREATE TABLE HANDLED_BY ( 
+    "BAR_Registration_No" VARCHAR(20) NOT NULL, 
+    case_no               VARCHAR(15) NOT NULL, 
+    CONSTRAINT pk_handled_by PRIMARY KEY ("BAR_Registration_No", case_no), 
+    CONSTRAINT fk_hb_lawyer FOREIGN KEY ("BAR_Registration_No") 
+        REFERENCES LAWYER ("BAR_Registration_No") 
+        ON UPDATE CASCADE ON DELETE CASCADE, 
+CONSTRAINT fk_hb_case FOREIGN KEY (case_no) 
+REFERENCES "CASE" (case_no) 
+ON UPDATE CASCADE ON DELETE CASCADE 
+); -- PARTICIPATES_IN : LITIGANTS (N) — CASE (N) 
+CREATE TABLE PARTICIPATES_IN ( 
+litigant_id VARCHAR(20) NOT NULL, 
+case_no     VARCHAR(15) NOT NULL, 
+CONSTRAINT pk_participates_in PRIMARY KEY (litigant_id, case_no), 
+CONSTRAINT fk_pi_litigant FOREIGN KEY (litigant_id) 
+REFERENCES LITIGANTS ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE, 
+CONSTRAINT fk_pi_case FOREIGN KEY (case_no) 
+REFERENCES "CASE" (case_no) 
+ON UPDATE CASCADE ON DELETE CASCADE 
+); -- WORKS_FOR : JUDGE (N) — COURT (1) 
+CREATE TABLE WORKS_FOR ( 
+judge_id INT NOT NULL, 
+court_id INT NOT NULL, 
+CONSTRAINT pk_works_for PRIMARY KEY (judge_id, court_id), 
+CONSTRAINT fk_wf_judge FOREIGN KEY (judge_id) 
+REFERENCES JUDGE ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE, 
+CONSTRAINT fk_wf_court FOREIGN KEY (court_id) 
+REFERENCES COURT ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE 
+); -- HANDLES : COURT (N) — CASE (N) 
+CREATE TABLE HANDLES ( 
+court_id INT         
+NOT NULL, 
+case_no  VARCHAR(15) NOT NULL, 
+CONSTRAINT pk_handles PRIMARY KEY (court_id, case_no), 
+CONSTRAINT fk_han_court FOREIGN KEY (court_id) 
+REFERENCES COURT ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE, 
+CONSTRAINT fk_han_case FOREIGN KEY (case_no) 
+REFERENCES "CASE" (case_no) 
+ON UPDATE CASCADE ON DELETE CASCADE 
+); -- FORMS : JUDGE (N) — PANEL (N) 
+CREATE TABLE FORMS ( 
+judge_id INT NOT NULL, 
+panel_id INT NOT NULL, 
+CONSTRAINT pk_forms PRIMARY KEY (judge_id, panel_id), 
+CONSTRAINT fk_forms_judge FOREIGN KEY (judge_id) 
+REFERENCES JUDGE ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE, 
+CONSTRAINT fk_forms_panel FOREIGN KEY (panel_id) 
+REFERENCES PANEL ("ID") 
+ON UPDATE CASCADE ON DELETE CASCADE 
+); -- HEARD_BY : HEARING (N) — PANEL (N) 
+CREATE TABLE HEARD_BY ( 
+case_no    VARCHAR(15) NOT NULL, 
+hearing_no INT         
+NOT NULL, 
+ 
+    panel_id   INT         NOT NULL, 
+    CONSTRAINT pk_heard_by PRIMARY KEY (case_no, hearing_no, panel_id), 
+    CONSTRAINT fk_hb_hearing FOREIGN KEY (case_no, hearing_no) 
+        REFERENCES HEARING (case_no, "Hearing_No") 
+        ON UPDATE CASCADE ON DELETE CASCADE, 
+    CONSTRAINT fk_hb_panel FOREIGN KEY (panel_id) 
+        REFERENCES PANEL ("ID") 
+        ON UPDATE CASCADE ON DELETE CASCADE 
+); 
+ -- IS_PRECEDENT : self-referencing CASE — CASE 
+CREATE TABLE IS_PRECEDENT ( 
+    case_no           VARCHAR(15) NOT NULL, 
+    precedent_case_no VARCHAR(15) NOT NULL, 
+    CONSTRAINT pk_is_precedent PRIMARY KEY (case_no, precedent_case_no), 
+    CONSTRAINT fk_ip_case FOREIGN KEY (case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE CASCADE, 
+    CONSTRAINT fk_ip_precedent FOREIGN KEY (precedent_case_no) 
+        REFERENCES "CASE" (case_no) 
+        ON UPDATE CASCADE ON DELETE CASCADE 
+);
